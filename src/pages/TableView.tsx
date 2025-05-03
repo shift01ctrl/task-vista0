@@ -1,6 +1,7 @@
+
 import { useState } from "react";
 import { format } from "date-fns";
-import { Plus, Edit, Trash, User } from "lucide-react";
+import { Plus, Edit, Trash, User, Send } from "lucide-react";
 import { useTaskContext } from "@/context/TaskContext";
 import PageLayout from "@/components/layout/PageLayout";
 import TaskDialog from "@/components/tasks/TaskDialog";
@@ -8,12 +9,17 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Task } from "@/types/task";
 import { cn } from "@/lib/utils";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
+import { translateToFrench } from "@/utils/translations";
 
 const TableView = () => {
-  const { tasks, deleteTask } = useTaskContext();
+  const { tasks, deleteTask, updateTask } = useTaskContext();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [reportText, setReportText] = useState("");
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
 
   const handleAddTask = () => {
     setEditingTask(null);
@@ -23,6 +29,35 @@ const TableView = () => {
   const handleEditTask = (task: Task) => {
     setEditingTask(task);
     setDialogOpen(true);
+  };
+
+  const handleSubmitReport = (taskId: string) => {
+    // In a real app, this would send the report to a backend
+    toast.success(translateToFrench("Report submitted successfully!"));
+    
+    // Update the task status to show progress was made
+    const taskToUpdate = tasks.find(task => task.id === taskId);
+    if (taskToUpdate && taskToUpdate.status === "in-progress") {
+      updateTask(taskId, {
+        ...taskToUpdate,
+        description: taskToUpdate.description + "\n\nLatest report: " + reportText
+      });
+    }
+    
+    setReportText("");
+    setSelectedTaskId(null);
+  };
+
+  const toggleTaskSelection = (taskId: string, status: Task["status"]) => {
+    // Only allow selecting in-progress tasks
+    if (status === "in-progress") {
+      // If the task is already selected, deselect it
+      if (selectedTaskId === taskId) {
+        setSelectedTaskId(null);
+      } else {
+        setSelectedTaskId(taskId);
+      }
+    }
   };
 
   const getPriorityColor = (priority: Task["priority"]) => {
@@ -60,13 +95,47 @@ const TableView = () => {
       .toUpperCase();
   };
 
+  // Get profile image from localStorage
+  const profileImage = localStorage.getItem("profileImage");
+
+  // Selected task for reporting
+  const selectedTask = selectedTaskId ? tasks.find(task => task.id === selectedTaskId) : null;
+
   return (
     <PageLayout title="Table View">
-      <div className="mb-6 flex justify-end">
+      <div className="mb-6 flex justify-between">
+        <div>
+          <h2 className="text-lg font-medium">{translateToFrench("Task Management")}</h2>
+          <p className="text-sm text-muted-foreground">{translateToFrench("View and manage your tasks")}</p>
+        </div>
         <Button onClick={handleAddTask}>
-          <Plus className="h-4 w-4 mr-2" /> Add Task
+          <Plus className="h-4 w-4 mr-2" /> {translateToFrench("Add Task")}
         </Button>
       </div>
+
+      {/* Show report textarea only when a task is selected */}
+      {selectedTask && selectedTask.status === "in-progress" && (
+        <div className="mb-6 p-4 border rounded-md bg-background">
+          <h3 className="text-md font-medium mb-2">
+            {translateToFrench("Submit Report for")}: {selectedTask.title}
+          </h3>
+          <Textarea 
+            placeholder={translateToFrench("Enter your report here...")}
+            className="mb-3"
+            value={reportText}
+            onChange={(e) => setReportText(e.target.value)}
+          />
+          <div className="flex justify-end">
+            <Button 
+              onClick={() => handleSubmitReport(selectedTaskId)}
+              disabled={!reportText}
+              className="gap-2"
+            >
+              <Send className="h-4 w-4" /> {translateToFrench("Submit Report")}
+            </Button>
+          </div>
+        </div>
+      )}
 
       <div className="rounded-md border">
         <div className="overflow-x-auto">
@@ -86,9 +155,17 @@ const TableView = () => {
                 tasks.map((task) => {
                   const dueDate = new Date(task.dueDate);
                   const isOverdue = dueDate < new Date() && task.status !== "done";
+                  const isInProgress = task.status === "in-progress";
                   
                   return (
-                    <tr key={task.id} className="hover:bg-gray-50">
+                    <tr 
+                      key={task.id} 
+                      className={cn(
+                        "hover:bg-gray-50 cursor-pointer",
+                        selectedTaskId === task.id && "bg-blue-50"
+                      )}
+                      onClick={() => toggleTaskSelection(task.id, task.status)}
+                    >
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900">{task.title}</div>
                         <div className="text-sm text-gray-500 line-clamp-1">{task.description}</div>
@@ -113,6 +190,7 @@ const TableView = () => {
                         {task.assigneeName ? (
                           <div className="flex items-center gap-2">
                             <Avatar className="h-6 w-6">
+                              <AvatarImage src={profileImage} />
                               <AvatarFallback>{getInitials(task.assigneeName)}</AvatarFallback>
                             </Avatar>
                             <span className="text-sm">{task.assigneeName}</span>
@@ -121,7 +199,7 @@ const TableView = () => {
                           <div className="text-sm text-gray-500">Unassigned</div>
                         )}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium" onClick={(e) => e.stopPropagation()}>
                         <div className="flex space-x-2">
                           <Button
                             variant="ghost"

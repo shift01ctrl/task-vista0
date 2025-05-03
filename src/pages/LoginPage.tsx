@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -90,8 +89,8 @@ const LoginPage = () => {
         >
           <div className="absolute inset-0 bg-primary overflow-hidden">
             <motion.img 
-              src="https://images.unsplash.com/photo-1531297484001-80022131f5a1?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=2940&q=80" 
-              alt="Productivity workspace" 
+              src="https://res.cloudinary.com/monday-blogs/fl_lossy,f_auto,q_auto/wp-blog/2024/07/project-management.png" 
+              alt="Project management" 
               className={`w-full h-full object-cover opacity-20 ${animate ? 'animate-pulse' : ''}`}
               initial={{ scale: 1.1 }}
               animate={{ scale: animate ? 1.05 : 1 }}

@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { 
@@ -36,6 +35,8 @@ export function AppSidebar() {
   // Get user initials for avatar
   const username = localStorage.getItem("username") || "User";
   const initials = username.substring(0, 2).toUpperCase();
+  // Get profile image from localStorage
+  const profileImage = localStorage.getItem("profileImage");
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -108,7 +109,7 @@ export function AppSidebar() {
         <div className="flex items-center justify-between p-2">
           <div className="flex items-center space-x-2">
             <Avatar>
-              <AvatarImage src="" />
+              <AvatarImage src={profileImage || "https://images.unsplash.com/photo-1581092795360-fd1ca04f0952"} />
               <AvatarFallback className="bg-primary text-primary-foreground">
                 {initials}
               </AvatarFallback>
